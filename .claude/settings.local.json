@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(test:*)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(docker exec:*)",
+      "Bash(php artisan test:*)",
+      "Bash(docker compose exec:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose ps:*)"
+    ],
+    "deny": []
+  }
+}
