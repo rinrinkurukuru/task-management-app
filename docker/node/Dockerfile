@@ -21,14 +21,12 @@ RUN chown -R appuser:nodegroup /app
 # Development stage
 FROM base as development
 
-# Copy package files with proper ownership (as root for initial setup)
-COPY --chown=appuser:nodegroup package*.json ./
+# Stay as root for development to handle volume permissions
+# Copy package files (if they exist during build)
+COPY package*.json ./
 
-# Switch to app user
-USER appuser
-
-# Install dependencies with cache optimization
-RUN npm install --silent \
+# Install dependencies as root during build
+RUN npm install --silent 2>/dev/null || true \
     && npm cache clean --force
 
 # Health check for development
