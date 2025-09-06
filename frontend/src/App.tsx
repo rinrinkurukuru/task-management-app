@@ -32,7 +32,8 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const errorMessage = encodeURIComponent('ログインが必要です');
+    return <Navigate to={`/login?error=auth_required&message=${errorMessage}`} replace />;
   }
 
   return <>{children}</>;

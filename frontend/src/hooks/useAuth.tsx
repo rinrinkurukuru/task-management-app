@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (user: User, token: string) => void;
+  loginWithCredentials: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
   isAuthenticated: boolean;
@@ -59,6 +60,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(user));
   };
 
+  const loginWithCredentials = async (email: string, password: string) => {
+    try {
+      console.log('loginWithCredentials called with:', { email });
+      const response = await authAPI.login({ email, password });
+      console.log('Auth response received:', response);
+      if (response.success && response.data.user && response.data.token) {
+        login(response.data.user, response.data.token);
+      } else {
+        console.error('Invalid response structure:', response);
+        throw new Error('ログインレスポンスが不正です');
+      }
+    } catch (error: any) {
+      console.error('loginWithCredentials error:', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -96,6 +114,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     token,
     login,
+    loginWithCredentials,
     logout,
     updateUser,
     isAuthenticated: !!user && !!token,

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -14,11 +14,25 @@ import { useAuth } from '../hooks/useAuth';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { loginWithCredentials } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // URLパラメータまたは前のページからのエラーメッセージを表示
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const errorParam = searchParams.get('error');
+    const messageParam = searchParams.get('message');
+    
+    if (errorParam === 'auth_failed') {
+      setError('認証に失敗しました。再度ログインしてください。');
+    } else if (messageParam) {
+      setError(decodeURIComponent(messageParam));
+    }
+  }, [location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,10 +40,12 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await loginWithCredentials(email, password);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'ログインに失敗しました');
+      // パスワードフィールドをクリア
+      setPassword('');
     } finally {
       setLoading(false);
     }
