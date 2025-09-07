@@ -1,3 +1,4 @@
+import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authAPI } from '../services/authService';
 import { useAuth } from './useAuth';
@@ -67,20 +68,27 @@ export const useLogout = () => {
 export const useCurrentUser = () => {
   const { isAuthenticated, updateUser } = useAuth();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['user'],
     queryFn: () => authAPI.getUser(),
     enabled: isAuthenticated,
     staleTime: 1000 * 60 * 5, // 5分間キャッシュ
-    onSuccess: (data) => {
-      if (data.success && data.data.user) {
-        updateUser(data.data.user);
-      }
-    },
-    onError: (error: AxiosError) => {
-      console.error('Failed to fetch user:', error.message);
-    },
   });
+
+  // React Query v5では、useEffectでsuccessとerrorを処理
+  React.useEffect(() => {
+    if (query.data?.success && query.data?.data?.user) {
+      updateUser(query.data.data.user);
+    }
+  }, [query.data, updateUser]);
+
+  React.useEffect(() => {
+    if (query.error) {
+      console.error('Failed to fetch user:', (query.error as AxiosError).message);
+    }
+  }, [query.error]);
+
+  return query;
 };
 
 // パスワードリセットリクエスト用フック

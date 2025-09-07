@@ -1,35 +1,41 @@
 import React from 'react';
-import { Container, Typography, Box, Button } from '@mui/material';
+import { Box, AppBar, Toolbar, Typography, IconButton } from '@mui/material';
+import { Logout, AccountCircle } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
+import TaskManagementWithAPI from '../components/task-management/TaskManagementWithAPI';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
 
   return (
-    <Container component="main" maxWidth="lg">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h4">
-          ダッシュボード
-        </Typography>
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          ようこそ、{user?.name || 'ユーザー'}さん
-        </Typography>
-        <Button
-          variant="contained"
-          onClick={logout}
-          sx={{ mt: 3 }}
-        >
-          ログアウト
-        </Button>
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar position="static" sx={{ backgroundColor: '#030213' }}>
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Task Management System
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccountCircle />
+              <Typography variant="body1">
+                {user?.name || 'ユーザー'}
+              </Typography>
+            </Box>
+            <IconButton
+              color="inherit"
+              onClick={logout}
+              aria-label="logout"
+              title="ログアウト"
+            >
+              <Logout />
+            </IconButton>
+          </Box>
+        </Toolbar>
+      </AppBar>
+      <Box component="main">
+        <TaskManagementWithAPI />
       </Box>
-    </Container>
+    </Box>
   );
 };
 

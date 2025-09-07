@@ -10,11 +10,11 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
+import { useRegister } from '../hooks/useAuthQuery';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { mutate: register, isPending } = useRegister();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,14 +33,18 @@ const Register: React.FC = () => {
 
     setLoading(true);
 
-    try {
-      await register(email, password, name);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || '登録に失敗しました');
-    } finally {
-      setLoading(false);
-    }
+    register(
+      { email, password, name, password_confirmation: confirmPassword },
+      {
+        onSuccess: () => {
+          navigate('/dashboard');
+        },
+        onError: (err: any) => {
+          setError(err.response?.data?.message || err.message || '登録に失敗しました');
+          setLoading(false);
+        },
+      }
+    );
   };
 
   return (
@@ -76,7 +80,7 @@ const Register: React.FC = () => {
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              disabled={loading}
+              disabled={loading || isPending}
             />
             <TextField
               margin="normal"
@@ -88,7 +92,7 @@ const Register: React.FC = () => {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
+              disabled={loading || isPending}
             />
             <TextField
               margin="normal"
@@ -101,7 +105,7 @@ const Register: React.FC = () => {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
+              disabled={loading || isPending}
             />
             <TextField
               margin="normal"
@@ -113,16 +117,16 @@ const Register: React.FC = () => {
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              disabled={loading}
+              disabled={loading || isPending}
             />
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
+              disabled={loading || isPending}
             >
-              {loading ? <CircularProgress size={24} /> : '登録'}
+              {(loading || isPending) ? <CircularProgress size={24} /> : '登録'}
             </Button>
             
             <Box sx={{ textAlign: 'center' }}>

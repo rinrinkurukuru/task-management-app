@@ -29,7 +29,37 @@ class TaskController extends BaseApiController
         $tasks = $query
             ->orderBy('position')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($task) {
+                // Map day_of_week strings to numbers for frontend compatibility
+                $dayOfWeekMap = [
+                    'todo' => -1,
+                    'sunday' => 0,
+                    'monday' => 1,
+                    'tuesday' => 2,
+                    'wednesday' => 3,
+                    'thursday' => 4,
+                    'friday' => 5,
+                    'saturday' => 6,
+                ];
+                
+                $dayOfWeek = isset($dayOfWeekMap[$task->day_of_week]) 
+                    ? $dayOfWeekMap[$task->day_of_week] 
+                    : -1;
+                
+                return [
+                    'id' => (string) $task->id,
+                    'title' => $task->title,
+                    'description' => $task->description,
+                    'projectId' => 'work', // Default project since we don't have projects table
+                    'projectName' => 'Work',
+                    'projectColor' => '#3b82f6',
+                    'timeLimit' => $task->estimated_minutes,
+                    'timeSpent' => $task->actual_minutes ?? 0,
+                    'isCompleted' => !is_null($task->completed_at),
+                    'dayOfWeek' => $dayOfWeek,
+                ];
+            });
 
         return $this->success($tasks);
     }
