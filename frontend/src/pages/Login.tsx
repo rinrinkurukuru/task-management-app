@@ -26,7 +26,7 @@ const Login: React.FC = () => {
     const searchParams = new URLSearchParams(location.search);
     const errorParam = searchParams.get('error');
     const messageParam = searchParams.get('message');
-    
+
     if (errorParam === 'auth_failed') {
       setError('認証に失敗しました。再度ログインしてください。');
     } else if (messageParam) {
@@ -65,7 +65,7 @@ const Login: React.FC = () => {
           <Typography component="h1" variant="h5" align="center">
             ログイン
           </Typography>
-          
+
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>
               {error}
@@ -108,7 +108,7 @@ const Login: React.FC = () => {
             >
               {loading ? <CircularProgress size={24} /> : 'ログイン'}
             </Button>
-            
+
             <Box sx={{ textAlign: 'center' }}>
               <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
                 <Typography variant="body2" color="primary">

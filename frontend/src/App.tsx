@@ -104,7 +104,7 @@ function App() {
 
         {/* デフォルトルート */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        
+
         {/* 404ページ（後で実装） */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
