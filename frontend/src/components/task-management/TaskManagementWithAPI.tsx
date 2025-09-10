@@ -2,9 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { 
-  ThemeProvider, 
-  createTheme, 
-  CssBaseline,
   Container,
   Typography,
   Box,
@@ -22,25 +19,6 @@ import { TimerModal } from './components/SimpleTimerModal';
 import { Task, Project } from '../../types/task';
 import { taskService, projectService } from '../../services/taskService';
 
-// Material UI theme
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#030213',
-    },
-    secondary: {
-      main: '#3b82f6',
-    },
-    background: {
-      default: '#ffffff',
-      paper: '#ffffff',
-    },
-  },
-  shape: {
-    borderRadius: 10,
-  },
-});
 
 // Default projects
 const DEFAULT_PROJECTS: Project[] = [
@@ -368,9 +346,7 @@ const TaskManagementWithAPI: React.FC = () => {
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <DndProvider backend={HTML5Backend}>
+    <DndProvider backend={HTML5Backend}>
         <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ mb: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
@@ -461,7 +437,6 @@ const TaskManagementWithAPI: React.FC = () => {
           </Snackbar>
         </Container>
       </DndProvider>
-    </ThemeProvider>
   );
 };
 

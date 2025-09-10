@@ -66,8 +66,8 @@ const Login: React.FC = () => {
           alignItems: 'center',
         }}
       >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Typography component="h1" variant="h5" align="center">
+        <Paper elevation={3} sx={{ padding: 4, width: '100%', borderRadius: 2.5 }}>
+          <Typography component="h1" variant="h5" align="center" sx={{ fontWeight: 'bold', color: '#030213' }}>
             ログイン
           </Typography>
 
