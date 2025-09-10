@@ -4,17 +4,20 @@ import { authAPI } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   login: (user: User, token: string) => void;
-  loginWithCredentials: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUser: (user: User) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
-  checkAuthStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// ローカルストレージのキー定数
+const STORAGE_KEYS = {
+  AUTH_TOKEN: 'auth_token',
+  USER: 'user',
+} as const;
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -22,25 +25,40 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // ローカルストレージの操作を関数化
+  const storage = {
+    getToken: () => localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN),
+    getUser: () => {
+      const savedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      return savedUser ? JSON.parse(savedUser) : null;
+    },
+    setAuth: (user: User, token: string) => {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    },
+    clearAuth: () => {
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+    },
+  };
 
   // 初期化時に保存された認証情報をチェック
   useEffect(() => {
     const initAuth = async () => {
-      const savedToken = localStorage.getItem('auth_token');
-      const savedUser = localStorage.getItem('user');
+      const savedToken = storage.getToken();
+      const savedUser = storage.getUser();
 
       if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
+        setUser(savedUser);
 
         // トークンが有効か確認
         try {
           const response = await authAPI.getUser();
           if (response.success && response.data.user) {
             setUser(response.data.user);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
+            localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.data.user));
           }
         } catch (error) {
           // トークンが無効な場合はクリア
@@ -51,75 +69,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = (user: User, token: string) => {
     setUser(user);
-    setToken(token);
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-  };
-
-  const loginWithCredentials = async (email: string, password: string) => {
-    try {
-      console.log('loginWithCredentials called with:', { email });
-      const response = await authAPI.login({ email, password });
-      console.log('Auth response received:', response);
-      if (response.success && response.data.user && response.data.token) {
-        login(response.data.user, response.data.token);
-      } else {
-        console.error('Invalid response structure:', response);
-        throw new Error('ログインレスポンスが不正です');
-      }
-    } catch (error: any) {
-      console.error('loginWithCredentials error:', error);
-      throw error;
-    }
+    storage.setAuth(user, token);
   };
 
   const logout = () => {
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user');
+    storage.clearAuth();
   };
 
   const updateUser = (user: User) => {
     setUser(user);
-    localStorage.setItem('user', JSON.stringify(user));
-  };
-
-  const checkAuthStatus = async () => {
-    const savedToken = localStorage.getItem('auth_token');
-    if (!savedToken) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await authAPI.getUser();
-      if (response.success && response.data.user) {
-        setUser(response.data.user);
-        setToken(savedToken);
-        localStorage.setItem('user', JSON.stringify(response.data.user));
-      }
-    } catch (error) {
-      logout();
-    } finally {
-      setIsLoading(false);
-    }
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   };
 
   const value = {
     user,
-    token,
     login,
-    loginWithCredentials,
     logout,
     updateUser,
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: !!user && !!storage.getToken(),
     isLoading,
-    checkAuthStatus,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -10,16 +10,15 @@ import {
   Alert,
   CircularProgress
 } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
+import { useLogin } from '../hooks/useAuthQuery';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginWithCredentials } = useAuth();
+  const loginMutation = useLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   // URLパラメータまたは前のページからのエラーメッセージを表示
   useEffect(() => {
@@ -34,21 +33,27 @@ const Login: React.FC = () => {
     }
   }, [location]);
 
+  // React Queryのエラーを監視
+  useEffect(() => {
+    if (loginMutation.error) {
+      const errorMessage = (loginMutation.error as any)?.response?.data?.message || 'ログインに失敗しました';
+      setError(errorMessage);
+      setPassword('');
+    }
+  }, [loginMutation.error]);
+
+  // ログイン成功時の処理
+  useEffect(() => {
+    if (loginMutation.isSuccess) {
+      navigate('/dashboard');
+    }
+  }, [loginMutation.isSuccess, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
-
-    try {
-      await loginWithCredentials(email, password);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'ログインに失敗しました');
-      // パスワードフィールドをクリア
-      setPassword('');
-    } finally {
-      setLoading(false);
-    }
+    
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -84,7 +89,7 @@ const Login: React.FC = () => {
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
+              disabled={loginMutation.isPending}
             />
             <TextField
               margin="normal"
@@ -97,16 +102,16 @@ const Login: React.FC = () => {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
+              disabled={loginMutation.isPending}
             />
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
+              disabled={loginMutation.isPending}
             >
-              {loading ? <CircularProgress size={24} /> : 'ログイン'}
+              {loginMutation.isPending ? <CircularProgress size={24} /> : 'ログイン'}
             </Button>
 
             <Box sx={{ textAlign: 'center' }}>

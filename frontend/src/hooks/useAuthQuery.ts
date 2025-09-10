@@ -6,6 +6,43 @@ import { LoginCredentials, RegisterData } from '../types/auth';
 import { AxiosError } from 'axios';
 import { ApiError } from '../types/auth';
 
+// 定数
+const QUERY_KEYS = {
+  USER: ['user'],
+  HEALTH: ['health'],
+} as const;
+
+const CACHE_TIME = {
+  USER: 1000 * 60 * 5, // 5分
+  HEALTH: 1000 * 60,   // 1分
+} as const;
+
+// エラーメッセージ
+const ERROR_MESSAGES = {
+  LOGIN: 'ログインに失敗しました',
+  REGISTER: '登録に失敗しました',
+  LOGOUT: 'ログアウトに失敗しました',
+  FORGOT_PASSWORD: 'パスワードリセットに失敗しました',
+  RESET_PASSWORD: 'パスワードリセットに失敗しました',
+  EMAIL_VERIFICATION: 'メール検証に失敗しました',
+  FETCH_USER: 'ユーザー情報の取得に失敗しました',
+} as const;
+
+// 型定義
+interface ResetPasswordData {
+  token: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
+// 共通エラーハンドラー
+const handleAuthError = (error: AxiosError<ApiError>, defaultMessage: string) => {
+  const message = error.response?.data?.message || defaultMessage;
+  console.error(message);
+  return message;
+};
+
 // ログイン用フック
 export const useLogin = () => {
   const { login } = useAuth();
@@ -16,11 +53,11 @@ export const useLogin = () => {
     onSuccess: (data) => {
       if (data.success && data.data) {
         login(data.data.user, data.data.token);
-        queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER });
       }
     },
     onError: (error: AxiosError<ApiError>) => {
-      console.error('Login error:', error.response?.data?.message || 'ログインに失敗しました');
+      handleAuthError(error, ERROR_MESSAGES.LOGIN);
     },
   });
 };
@@ -35,11 +72,11 @@ export const useRegister = () => {
     onSuccess: (data) => {
       if (data.success && data.data) {
         login(data.data.user, data.data.token);
-        queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER });
       }
     },
     onError: (error: AxiosError<ApiError>) => {
-      console.error('Register error:', error.response?.data?.message || '登録に失敗しました');
+      handleAuthError(error, ERROR_MESSAGES.REGISTER);
     },
   });
 };
@@ -49,17 +86,18 @@ export const useLogout = () => {
   const { logout } = useAuth();
   const queryClient = useQueryClient();
 
+  const handleLogout = () => {
+    logout();
+    queryClient.clear();
+  };
+
   return useMutation({
     mutationFn: () => authAPI.logout(),
-    onSuccess: () => {
-      logout();
-      queryClient.clear();
-    },
+    onSuccess: handleLogout,
     onError: (error: AxiosError<ApiError>) => {
       // エラーが発生してもローカルでログアウト処理を実行
-      logout();
-      queryClient.clear();
-      console.error('Logout error:', error.response?.data?.message || 'ログアウトに失敗しました');
+      handleLogout();
+      handleAuthError(error, ERROR_MESSAGES.LOGOUT);
     },
   });
 };
@@ -69,10 +107,10 @@ export const useCurrentUser = () => {
   const { isAuthenticated, updateUser } = useAuth();
 
   const query = useQuery({
-    queryKey: ['user'],
+    queryKey: QUERY_KEYS.USER,
     queryFn: () => authAPI.getUser(),
     enabled: isAuthenticated,
-    staleTime: 1000 * 60 * 5, // 5分間キャッシュ
+    staleTime: CACHE_TIME.USER,
   });
 
   // React Query v5では、useEffectでsuccessとerrorを処理
@@ -84,7 +122,7 @@ export const useCurrentUser = () => {
 
   React.useEffect(() => {
     if (query.error) {
-      console.error('Failed to fetch user:', (query.error as AxiosError).message);
+      handleAuthError(query.error as AxiosError<ApiError>, ERROR_MESSAGES.FETCH_USER);
     }
   }, [query.error]);
 
@@ -96,7 +134,7 @@ export const useForgotPassword = () => {
   return useMutation({
     mutationFn: (email: string) => authAPI.forgotPassword(email),
     onError: (error: AxiosError<ApiError>) => {
-      console.error('Forgot password error:', error.response?.data?.message || 'パスワードリセットに失敗しました');
+      handleAuthError(error, ERROR_MESSAGES.FORGOT_PASSWORD);
     },
   });
 };
@@ -104,14 +142,9 @@ export const useForgotPassword = () => {
 // パスワードリセット用フック
 export const useResetPassword = () => {
   return useMutation({
-    mutationFn: (data: {
-      token: string;
-      email: string;
-      password: string;
-      password_confirmation: string;
-    }) => authAPI.resetPassword(data),
+    mutationFn: (data: ResetPasswordData) => authAPI.resetPassword(data),
     onError: (error: AxiosError<ApiError>) => {
-      console.error('Reset password error:', error.response?.data?.message || 'パスワードリセットに失敗しました');
+      handleAuthError(error, ERROR_MESSAGES.RESET_PASSWORD);
     },
   });
 };
@@ -121,7 +154,7 @@ export const useVerifyEmail = () => {
   return useMutation({
     mutationFn: (token: string) => authAPI.verifyEmail(token),
     onError: (error: AxiosError<ApiError>) => {
-      console.error('Email verification error:', error.response?.data?.message || 'メール検証に失敗しました');
+      handleAuthError(error, ERROR_MESSAGES.EMAIL_VERIFICATION);
     },
   });
 };
@@ -129,9 +162,9 @@ export const useVerifyEmail = () => {
 // ヘルスチェック用フック
 export const useHealthCheck = () => {
   return useQuery({
-    queryKey: ['health'],
+    queryKey: QUERY_KEYS.HEALTH,
     queryFn: () => authAPI.healthCheck(),
-    staleTime: 1000 * 60, // 1分間キャッシュ
+    staleTime: CACHE_TIME.HEALTH,
     retry: 1,
   });
 };
